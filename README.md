@@ -97,13 +97,39 @@ NODE_ENV=production bun server/index.ts   # 或 bun run start
 - `.github/workflows/ci.yml`：push 到 `main`、PR 或手动触发时运行 `bun install --frozen-lockfile`、`typecheck`、`bun test`、`bun run build`。
 - `.github/workflows/deploy.yml`：仅手动触发（Actions → Deploy production → Run workflow），SSH 登录服务器执行 `git pull`、安装依赖、构建、`systemctl restart starstack`，最后请求 `/api/health`。
 
-服务器首次部署需用 git clone（不要用 rsync 覆盖，否则 deploy workflow 的 `git pull` 会失败），并允许部署用户免密重启服务：
+服务器首次部署需用 git clone（不要用 rsync 覆盖，否则 deploy workflow 的 `git pull` 会失败）。仓库是私有时，先在服务器生成只读部署密钥，把公钥加到 GitHub 仓库 Settings → Deploy keys（勾选 read-only）：
+
+```bash
+# 服务器上，以 starstack 用户执行
+sudo install -d -m 700 -o starstack -g starstack /home/starstack/.ssh
+sudo -u starstack ssh-keygen -t ed25519 -C "starstack-server-readonly" -f /home/starstack/.ssh/starstack_readonly -N ""
+sudo -u starstack cat /home/starstack/.ssh/starstack_readonly.pub
+# 把输出贴到 GitHub 仓库 Settings → Deploy keys（不要勾选 Allow write access）
+
+# 本机也可以直接添加（把上面的公钥保存为文件后）
+gh repo deploy-key add starstack_readonly.pub --title "starstack server" --repo usfese/starstack
+```
+
+配置服务器 SSH 使用该密钥：
+
+```bash
+sudo -u starstack tee /home/starstack/.ssh/config >/dev/null <<'EOF'
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/starstack_readonly
+  IdentitiesOnly yes
+EOF
+sudo chmod 600 /home/starstack/.ssh/config
+```
+
+然后克隆并允许部署用户免密重启服务：
 
 ```bash
 sudo mkdir -p /opt/starstack
 sudo chown starstack:starstack /opt/starstack
-sudo -u starstack git clone git@github.com:<你的账号>/starstack.git /opt/starstack
-# 生成专用部署密钥（本机执行），公钥加到服务器 starstack 用户的 ~/.ssh/authorized_keys
+sudo -u starstack git clone git@github.com:usfese/starstack.git /opt/starstack
+# 生成 Actions → 服务器 的专用部署密钥（本机执行），公钥加到服务器 starstack 用户的 ~/.ssh/authorized_keys
 ssh-keygen -t ed25519 -C "starstack-deploy" -f ~/.ssh/starstack_deploy -N ""
 
 # 服务器上（仅允许这一条免密命令）

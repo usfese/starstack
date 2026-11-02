@@ -95,7 +95,7 @@ NODE_ENV=production bun server/index.ts   # 或 bun run start
 ### GitHub Actions
 
 - `.github/workflows/ci.yml`：push 到 `main`、PR 或手动触发时运行 `bun install --frozen-lockfile`、`typecheck`、`bun test`、`bun run build`。
-- `.github/workflows/deploy.yml`：仅手动触发（Actions → Deploy production → Run workflow），SSH 登录服务器执行 `git pull`、安装依赖、构建、`systemctl restart starstack`，最后请求 `/api/health`。
+- `.github/workflows/deploy.yml`：`main` 上 CI 成功后自动部署；也可在 Actions → Deploy production → Run workflow 手动触发。SSH 登录服务器执行 `git pull`、安装依赖、构建、`systemctl restart starstack`，随后检查本机 `/api/health` 与公网 `https://starstack.usfese.cc/api/health`。
 
 服务器首次部署需用 git clone（不要用 rsync 覆盖，否则 deploy workflow 的 `git pull` 会失败）。仓库是私有时，先在服务器生成只读部署密钥，把公钥加到 GitHub 仓库 Settings → Deploy keys（勾选 read-only）：
 

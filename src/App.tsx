@@ -45,6 +45,47 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function RequireAdmin({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return <Spinner />;
+
+  if (!user) {
+    return (
+      <EmptyState
+        title="请先登录后继续"
+        action={
+          <Link
+            to="/login"
+            className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
+          >
+            使用 GitHub 登录
+          </Link>
+        }
+      />
+    );
+  }
+
+  if (!user.isAdmin) {
+    return (
+      <EmptyState
+        title="无权访问管理面板"
+        hint="该页面仅对站点管理员开放。"
+        action={
+          <Link
+            to="/"
+            className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400"
+          >
+            返回首页
+          </Link>
+        }
+      />
+    );
+  }
+
+  return <>{children}</>;
+}
+
 function RouteError() {
   return (
     <div className="flex flex-col items-center gap-4 py-24 text-center">
@@ -97,9 +138,9 @@ const router = createBrowserRouter([
       {
         path: 'admin',
         element: (
-          <RequireAuth>
+          <RequireAdmin>
             <Admin />
-          </RequireAuth>
+          </RequireAdmin>
         ),
       },
       { path: 'login', element: <Login /> },

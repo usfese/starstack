@@ -196,7 +196,7 @@ export function Admin() {
 
   const reevaluate = async (id: number) => {
     try {
-      await api(`/api/admin/projects/${id}/reevaluate`, { method: 'POST' });
+      await api(`/api/admin/projects/${id}/reevaluate?force=1`, { method: 'POST' });
       toast.success('已加入评估队列');
       refreshAll();
     } catch (error) {

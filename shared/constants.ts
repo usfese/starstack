@@ -1,5 +1,6 @@
 export const SITE_NAME = '星栈';
 export const SITE_TAGLINE = 'GitHub 项目分享与周榜';
+export const SOURCE_URL = 'https://github.com/usfese/starstack';
 
 export const TAGS = [
   { value: 'ai', label: 'AI/机器学习' },

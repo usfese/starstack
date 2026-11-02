@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { SITE_NAME, SITE_TAGLINE } from '../../shared/constants';
+import { SITE_NAME, SITE_TAGLINE, SOURCE_URL } from '../../shared/constants';
 import { useAuth } from '../context/AuthContext';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -82,7 +82,15 @@ export function Layout() {
       </main>
 
       <footer className="border-t border-white/10 py-6 text-center text-xs text-slate-500">
-        {SITE_NAME} · {SITE_TAGLINE}
+        {SITE_NAME} · {SITE_TAGLINE} ·{' '}
+        <a
+          href={SOURCE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline-offset-2 hover:text-slate-300 hover:underline"
+        >
+          源码（AGPL-3.0）
+        </a>
       </footer>
     </div>
   );

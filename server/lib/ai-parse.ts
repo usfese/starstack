@@ -32,6 +32,11 @@ function cleanList(value: unknown, max: number): string[] {
     .slice(0, max);
 }
 
+function clip(text: string, maxChars: number): string {
+  const value = text.replace(/\s+/g, ' ').trim();
+  return value.length > maxChars ? `${value.slice(0, maxChars - 1)}…` : value;
+}
+
 /**
  * 从可能包含解释文字 / Markdown 围栏的回复中截取第一个完整的 JSON 对象。
  * 通过字符串/转义状态避免把 JSON 字符串里的花括号当成结构。
@@ -106,8 +111,8 @@ export function parseAiPayload(raw: string): EvaluationResult {
     usefulness: clampScore(d.usefulness),
   };
 
-  const strengths = cleanList(obj.strengths, 5);
-  const improvements = cleanList(obj.improvements, 5);
+  const strengths = cleanList(obj.strengths, 2).map((item) => clip(item, 24));
+  const improvements = cleanList(obj.improvements, 2).map((item) => clip(item, 24));
   if (strengths.length === 0) throw new AiParseError('AI 未返回优点');
   if (improvements.length === 0) throw new AiParseError('AI 未返回改进建议');
 

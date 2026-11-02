@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { tagLabel } from '../../shared/constants';
 import type { ProjectDetail } from '../../shared/types';
 import { AiPanel } from '../components/AiPanel';
+import { Comments } from '../components/Comments';
 import { ConfirmButton } from '../components/ConfirmButton';
 import { EmptyState } from '../components/EmptyState';
 import { Markdown } from '../components/Markdown';
@@ -52,7 +53,8 @@ export function ProjectDetailPage() {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="flex min-w-0 flex-col gap-6">
         {detail.error ? (
           <p className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -166,6 +168,9 @@ export function ProjectDetailPage() {
           </div>
         </section>
       </aside>
+      </div>
+
+      <Comments projectId={project.id} />
     </div>
   );
 }

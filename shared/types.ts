@@ -126,3 +126,30 @@ export interface GithubRepoOption {
 export interface GithubReposResponse {
   repos: GithubRepoOption[];
 }
+
+export interface CommentAuthor {
+  id: number;
+  login: string;
+  name: string | null;
+  avatarUrl: string | null;
+  isAdmin: boolean;
+}
+
+export interface CommentDTO {
+  id: number;
+  content: string;
+  createdAt: string;
+  author: CommentAuthor;
+  canDelete: boolean;
+}
+
+export interface CommentsResponse {
+  items: CommentDTO[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface CommentCreateResponse {
+  comment: CommentDTO;
+}

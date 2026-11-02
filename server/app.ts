@@ -9,6 +9,7 @@ import { csrfProtection } from './middleware/csrf';
 import { authRoutes } from './routes/auth';
 import { projectRoutes } from './routes/projects';
 import { starRoutes } from './routes/stars';
+import { commentRoutes } from './routes/comments';
 import { leaderboardRoutes } from './routes/leaderboard';
 import { meRoutes } from './routes/me';
 import { githubRoutes } from './routes/github';
@@ -56,6 +57,7 @@ app.get('/api/health', (c) =>
 app.route('/auth', authRoutes);
 app.route('/api/projects', projectRoutes);
 app.route('/api/projects', starRoutes);
+app.route('/api/projects', commentRoutes);
 app.route('/api/leaderboard', leaderboardRoutes);
 app.route('/api/me', meRoutes);
 app.route('/api/github', githubRoutes);

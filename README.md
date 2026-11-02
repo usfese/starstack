@@ -7,6 +7,7 @@ GitHub 项目分享社区：用 GitHub OAuth 登录，提交自己名下的公�
 - **仅 GitHub 登录**：不实现邮箱、密码或 SMTP 邮件。OAuth 只请求 `read:org`（只读组织成员关系，用于判断组织管理员）；升级后老用户需退出重新登录以授予该 scope。
 - **提交项目**：提交页可从下拉直接选择自己的公开仓库，或自己担任 **admin/owner** 的组织公开仓库；必须是公开、非 fork。管理员可代提交任意非 fork 仓库。
 - **Star 验证**：Star 由用户本人在 GitHub 完成，站点用其 OAuth token 调用 `GET /user/starred/{owner}/{repo}` 确认（204 = 已 Star）。每人每项目只计一次，验证时间即“本周获星”依据；事后取消 Star 不回滚历史。
+- **项目评论**：登录用户可在项目页发表评论（纯文本，最多 1000 字，20 条/小时限流）；评论作者和管理员可删除。
 - **AI 评估**：创新性 / 工程质量 / 文档 / 可维护性 / 实用价值五维打分，另给优点、改进建议与结论。未配置 `AI_API_KEY` 时降级为启发式评分，并在页面明确标注。
 - **周榜**：只统计本站验证事件；历史周的快照在访问周榜时惰性补齐，保留最近 8 周。
 - **管理面板**：统计概览、项目上/下架与删除、重新评估、用户封禁/解封、评估队列查看。
@@ -156,8 +157,8 @@ gh secret set DEPLOY_PORT --body "22"   # 可选，默认 22
 
 ## API 摘要
 
-公开：`GET /api/health`、`GET /api/projects`、`GET /api/projects/:id`、`GET /api/leaderboard`。
-登录后：`GET /api/me`、`GET /api/me/projects`、`GET /api/me/stars`、`POST /api/projects`、`PATCH/DELETE /api/projects/:id`、`POST /api/projects/:id/star/verify`、`POST /auth/logout`。
+公开：`GET /api/health`、`GET /api/projects`、`GET /api/projects/:id`、`GET /api/projects/:id/comments`、`GET /api/leaderboard`。
+登录后：`GET /api/me`、`GET /api/me/projects`、`GET /api/me/stars`、`POST /api/projects`、`PATCH/DELETE /api/projects/:id`、`POST /api/projects/:id/star/verify`、`POST /api/projects/:id/comments`、`DELETE /api/projects/:id/comments/:commentId`、`POST /auth/logout`。
 管理员：`GET /api/admin/stats`、`GET /api/admin/projects`、`POST /api/admin/projects/:id/status`、`POST /api/admin/projects/:id/reevaluate`、`GET /api/admin/users`、`POST /api/admin/users/:id/ban`、`GET /api/admin/evaluations`。
 
 错误统一为 `{ error, message, details? }`；`/api/*` 与 `/auth/logout` 的非安全方法要求 `Origin` 与 `FRONTEND_URL` 一致（CSRF）。

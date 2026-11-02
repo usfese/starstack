@@ -64,9 +64,9 @@ projectRoutes.get('/', (c) => {
   }
   if (like) {
     conditions.push(
-      "(p.title LIKE ? ESCAPE '\\' OR p.repo_full_name LIKE ? ESCAPE '\\' OR p.intro_md LIKE ? ESCAPE '\\')",
+      "(p.title LIKE ? ESCAPE '\\' OR p.repo_full_name LIKE ? ESCAPE '\\' OR p.intro_md LIKE ? ESCAPE '\\' OR EXISTS(SELECT 1 FROM json_each(p.tags) WHERE json_each.value LIKE ? ESCAPE '\\'))",
     );
-    args.push(like, like, like);
+    args.push(like, like, like, like);
   }
   if (sort === 'needs') {
     conditions.push('(SELECT COUNT(*) FROM star_events s WHERE s.project_id = p.id) < 10');

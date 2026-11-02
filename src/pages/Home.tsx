@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { TAGS } from '../../shared/constants';
 import type { LeaderboardResponse, ProjectListResponse } from '../../shared/types';
 import { EmptyState } from '../components/EmptyState';
 import { ProjectCard } from '../components/ProjectCard';
@@ -9,11 +11,19 @@ import { formatWeekRange } from '../lib/format';
 
 export function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState('');
   const leaderboard = useApi<LeaderboardResponse>('/api/leaderboard');
   const latest = useApi<ProjectListResponse>('/api/projects?sort=latest&pageSize=6');
   const needs = useApi<ProjectListResponse>('/api/projects?sort=needs&pageSize=3');
 
   const topFive = leaderboard.data?.entries.slice(0, 5) ?? [];
+
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const q = search.trim();
+    navigate(q ? `/projects?q=${encodeURIComponent(q)}` : '/projects');
+  };
 
   return (
     <div className="flex flex-col gap-10">
@@ -22,6 +32,37 @@ export function Home() {
           把你的 GitHub 项目，放到聚光灯下
         </h1>
         <p className="mt-3 text-slate-300">AI 质量评估 · 每周真实 Star 榜 · 让好项目被看见</p>
+
+        <form onSubmit={submitSearch} className="mt-5 flex max-w-xl gap-2">
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="搜索仓库名、简介或标签"
+            aria-label="搜索项目"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-400/60"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/10"
+          >
+            搜索
+          </button>
+        </form>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <span className="text-slate-500">快捷标签</span>
+          {TAGS.map((tag) => (
+            <Link
+              key={tag.value}
+              to={`/projects?tag=${encodeURIComponent(tag.value)}`}
+              className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300 transition-colors hover:border-indigo-400/40 hover:text-indigo-200"
+            >
+              {tag.label}
+            </Link>
+          ))}
+        </div>
+
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             to={user ? '/submit' : '/login'}

@@ -91,7 +91,7 @@ export function Projects() {
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="搜索项目、仓库或介绍"
+          placeholder="搜索仓库名、简介或标签"
           aria-label="搜索项目"
           className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-400/60 sm:max-w-sm"
         />

@@ -145,12 +145,13 @@ export function ProjectDetailPage() {
             {project.tags.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {project.tags.map((tag) => (
-                  <span
+                  <Link
                     key={tag}
-                    className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-slate-300"
+                    to={`/projects?tag=${encodeURIComponent(tag)}`}
+                    className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-slate-300 transition-colors hover:border-indigo-400/40 hover:text-indigo-200"
                   >
                     {tagLabel(tag)}
-                  </span>
+                  </Link>
                 ))}
               </div>
             ) : null}

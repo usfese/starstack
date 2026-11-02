@@ -100,12 +100,18 @@ export function ProjectCard({ project }: { project: ProjectListItem }) {
       {project.tags.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {project.tags.map((tag) => (
-            <span
+            <button
               key={tag}
-              className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-slate-300"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                navigate(`/projects?tag=${encodeURIComponent(tag)}`);
+              }}
+              aria-label={`按标签 ${tagLabel(tag)} 搜索`}
+              className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-slate-300 transition-colors hover:border-indigo-400/40 hover:text-indigo-200"
             >
               {tagLabel(tag)}
-            </span>
+            </button>
           ))}
         </div>
       ) : null}

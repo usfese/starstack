@@ -1,3 +1,4 @@
+import { useState, type FormEvent } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { SITE_NAME, SITE_TAGLINE, SOURCE_URL } from '../../shared/constants';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +11,13 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 export function Layout() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const q = search.trim();
+    navigate(q ? `/projects?q=${encodeURIComponent(q)}` : '/projects');
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -40,6 +48,17 @@ export function Layout() {
               </NavLink>
             ) : null}
           </nav>
+
+          <form onSubmit={submitSearch} className="hidden w-52 shrink-0 lg:block">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="搜索仓库或标签"
+              aria-label="搜索项目"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-400/60"
+            />
+          </form>
 
           <div className="flex shrink-0 items-center gap-2 text-sm">
             {loading ? null : user ? (

@@ -9,6 +9,7 @@ import type {
 import { useToast } from '../context/ToastContext';
 import { api, ApiError } from '../lib/api';
 import { formatDate } from '../lib/format';
+import { RepoPicker, RepoIcon } from './RepoPicker';
 
 interface ProjectFormProps {
   mode: 'create' | 'edit';
@@ -24,10 +25,6 @@ interface ProjectFormProps {
 
 interface CreatedResponse {
   id: number;
-}
-
-function shortDescription(description: string): string {
-  return description.length > 60 ? `${description.slice(0, 60)}…` : description;
 }
 
 export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
@@ -78,21 +75,11 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
     };
   }, [mode, repoReload]);
 
-  const chooseRepo = (fullName: string) => {
-    if (!fullName) return;
-    setRepo(fullName);
-    if (!title.trim()) {
-      const name = fullName.split('/')[1];
-      if (name) setTitle(name);
-    }
+  const handleSelectRepo = (option: GithubRepoOption) => {
+    setRepo(option.fullName);
+    setError(null);
+    if (!title.trim()) setTitle(option.name);
   };
-
-  const repoGroups = new Map<string, GithubRepoOption[]>();
-  for (const option of repoOptions ?? []) {
-    const list = repoGroups.get(option.ownerLogin) ?? [];
-    list.push(option);
-    repoGroups.set(option.ownerLogin, list);
-  }
 
   const toggleTag = (tag: Tag) => {
     setTags((prev) => {
@@ -104,6 +91,10 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (mode === 'create' && !repo.trim()) {
+      setError('请先选择一个 GitHub 仓库');
+      return;
+    }
     setPending(true);
     setError(null);
 
@@ -151,81 +142,29 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
 
       {mode === 'create' ? (
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="repo-option" className="text-sm text-slate-300">
-            从我的仓库选择
-          </label>
-          <select
-            id="repo-option"
-            value=""
-            onChange={(event) => chooseRepo(event.target.value)}
-            disabled={repoOptionsLoading}
-            className={fieldClass}
-          >
-            <option value="">
-              {repoOptionsLoading ? '正在读取你的 GitHub 仓库…' : '手动输入 / 选择仓库'}
-            </option>
-            {[...repoGroups.entries()].map(([owner, options]) => (
-              <optgroup
-                key={owner}
-                label={`${owner}${options[0]?.ownerType === 'Organization' ? '（组织）' : ''}`}
-              >
-                {options.map((option) => (
-                  <option key={option.fullName} value={option.fullName}>
-                    {option.name}
-                    {option.archived ? '（已归档）' : ''}
-                    {option.description ? ` — ${shortDescription(option.description)}` : ''}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          {repoOptionsError ? (
-            <span className="text-xs text-rose-300">
-              无法读取仓库列表：{repoOptionsError}{' '}
-              <button
-                type="button"
-                onClick={() => setRepoReload((value) => value + 1)}
-                className="underline"
-              >
-                重试
-              </button>
-            </span>
-          ) : null}
-          {!repoOptionsLoading && !repoOptionsError && repoOptions?.length === 0 ? (
-            <span className="text-xs text-slate-500">
-              没有可提交的公开仓库（需本人或组织管理员，且非 fork）。
-            </span>
-          ) : null}
-          {repoOptions?.some((option) => option.ownerType === 'Organization') ? (
-            <span className="text-xs text-slate-500">组织仓库来自你担任管理员的组织。</span>
-          ) : null}
+          <span className="text-sm text-slate-300">GitHub 仓库</span>
+          <RepoPicker
+            repos={repoOptions ?? []}
+            loading={repoOptionsLoading}
+            error={repoOptionsError}
+            selected={repo}
+            onSelect={handleSelectRepo}
+            onClear={() => setRepo('')}
+            onRetry={() => setRepoReload((value) => value + 1)}
+          />
         </div>
-      ) : null}
-
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm text-slate-300">GitHub 仓库</span>
-        {mode === 'edit' ? (
-          <input
-            value={initial?.repoFullName ?? ''}
-            readOnly
-            disabled
-            className={`${fieldClass} opacity-70`}
-          />
-        ) : (
-          <input
-            value={repo}
-            onChange={(event) => setRepo(event.target.value)}
-            placeholder="owner/repo 或 https://github.com/owner/repo"
-            required
-            className={fieldClass}
-          />
-        )}
-        <span className="text-xs text-slate-500">
-          {mode === 'edit'
-            ? '仓库不可修改。'
-            : '公开、非 fork；可以是自己的仓库，或你担任管理员的组织仓库。'}
-        </span>
-      </label>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm text-slate-300">GitHub 仓库</span>
+          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
+            <span className="text-slate-400">
+              <RepoIcon />
+            </span>
+            <span className="font-mono text-slate-200">{initial?.repoFullName}</span>
+          </div>
+          <span className="text-xs text-slate-500">仓库不可修改。</span>
+        </div>
+      )}
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm text-slate-300">项目标题</span>
@@ -295,7 +234,7 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
       <div>
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || (mode === 'create' && !repo.trim())}
           className="inline-flex items-center justify-center rounded-lg bg-indigo-500 px-5 py-2 font-medium text-white hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? '提交中…' : mode === 'create' ? '发布项目' : '保存修改'}

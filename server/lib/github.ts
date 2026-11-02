@@ -44,7 +44,7 @@ export interface RepoMeta {
 interface RawRepo {
   full_name?: string;
   name?: string;
-  owner?: { login?: string; type?: string };
+  owner?: { login?: string; type?: string; avatar_url?: string };
   description?: string | null;
   stargazers_count?: number;
   forks_count?: number;
@@ -120,24 +120,28 @@ function fakeRepoOptions(login: string): GithubRepoOption[] {
       name: 'demo-repo',
       ownerLogin: login,
       ownerType: 'User',
+      ownerAvatarUrl: `https://github.com/identicons/${login}.png`,
       description: '本地验证用的个人仓库',
       language: 'TypeScript',
       stars: 12,
       fork: false,
       archived: false,
       private: false,
+      pushedAt: new Date().toISOString(),
     },
     {
       fullName: `acme/${login}-org-repo`,
       name: `${login}-org-repo`,
       ownerLogin: 'acme',
       ownerType: 'Organization',
+      ownerAvatarUrl: 'https://github.com/identicons/acme.png',
       description: '本地验证用的组织仓库',
       language: 'Go',
       stars: 34,
       fork: false,
       archived: false,
       private: false,
+      pushedAt: new Date(Date.now() - 86_400_000).toISOString(),
     },
   ];
 }
@@ -366,12 +370,14 @@ export async function fetchEligibleRepos(
       name: repo.name,
       ownerLogin: repo.owner.login,
       ownerType,
+      ownerAvatarUrl: repo.owner.avatar_url ?? null,
       description: repo.description ?? null,
       language: repo.language ?? null,
       stars: repo.stargazers_count ?? 0,
       fork: false,
       archived: repo.archived === true,
       private: false,
+      pushedAt: repo.pushed_at ?? null,
     });
   }
   return result;

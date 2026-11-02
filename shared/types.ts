@@ -113,12 +113,14 @@ export interface GithubRepoOption {
   name: string;
   ownerLogin: string;
   ownerType: 'User' | 'Organization';
+  ownerAvatarUrl: string | null;
   description: string | null;
   language: string | null;
   stars: number;
   fork: boolean;
   archived: boolean;
   private: boolean;
+  pushedAt: string | null;
 }
 
 export interface GithubReposResponse {

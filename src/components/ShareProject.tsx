@@ -51,6 +51,11 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number):
   return `${result}…`;
 }
 
+function shorten(text: string, maxChars: number): string {
+  const value = text.replace(/\s+/g, ' ').trim();
+  return value.length > maxChars ? `${value.slice(0, maxChars - 1)}…` : value;
+}
+
 function wrapText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -400,15 +405,23 @@ function drawPoster(canvas: HTMLCanvasElement, project: ProjectDetail, url: stri
     const prosY = aiY + aiHeight + 190;
     const columnWidth = (WIDTH - PAD * 2 - 30) / 2;
     const columns = [
-      { title: '优点', items: score.strengths.slice(0, 2), color: '#34d399' },
-      { title: '改进建议', items: score.improvements.slice(0, 2), color: '#fbbf24' },
+      {
+        title: '优点',
+        items: score.strengths.slice(0, 2).map((item) => shorten(item, 24)),
+        color: '#34d399',
+      },
+      {
+        title: '改进建议',
+        items: score.improvements.slice(0, 2).map((item) => shorten(item, 24)),
+        color: '#fbbf24',
+      },
     ];
     columns.forEach((column, columnIndex) => {
       const x = PAD + columnIndex * (columnWidth + 30);
       ctx.fillStyle = column.color;
       ctx.font = `600 20px ${FONT}`;
       ctx.fillText(column.title, x, prosY);
-      ctx.font = `400 20px ${FONT}`;
+      ctx.font = `400 19px ${FONT}`;
       column.items.forEach((item, itemIndex) => {
         ctx.fillStyle = '#94a3b8';
         ctx.fillText(

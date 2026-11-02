@@ -126,6 +126,8 @@ authRoutes.get('/github', (c) => {
   url.searchParams.set('client_id', env.githubClientId);
   url.searchParams.set('redirect_uri', env.oauthCallbackUrl);
   url.searchParams.set('state', state);
+  // 只读组织成员关系，用于判断组织仓库提交者是否为组织管理员。
+  url.searchParams.set('scope', 'read:org');
   return c.redirect(url.toString(), 302);
 });
 

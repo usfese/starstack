@@ -4,8 +4,8 @@ GitHub 项目分享社区：用 GitHub OAuth 登录，提交自己名下的公�
 
 ## 功能
 
-- **仅 GitHub 登录**：不实现邮箱、密码或 SMTP 邮件。OAuth 不申请任何 scope，只读取公开资料。
-- **提交项目**：仓库必须是公开、非 fork、且属于提交者本人（管理员可代提交任意非 fork 仓库）。
+- **仅 GitHub 登录**：不实现邮箱、密码或 SMTP 邮件。OAuth 只请求 `read:org`（只读组织成员关系，用于判断组织管理员）；升级后老用户需退出重新登录以授予该 scope。
+- **提交项目**：提交页可从下拉直接选择自己的公开仓库，或自己担任 **admin/owner** 的组织公开仓库；必须是公开、非 fork。管理员可代提交任意非 fork 仓库。
 - **Star 验证**：Star 由用户本人在 GitHub 完成，站点用其 OAuth token 调用 `GET /user/starred/{owner}/{repo}` 确认（204 = 已 Star）。每人每项目只计一次，验证时间即“本周获星”依据；事后取消 Star 不回滚历史。
 - **AI 评估**：创新性 / 工程质量 / 文档 / 可维护性 / 实用价值五维打分，另给优点、改进建议与结论。未配置 `AI_API_KEY` 时降级为启发式评分，并在页面明确标注。
 - **周榜**：只统计本站验证事件；历史周的快照在访问周榜时惰性补齐，保留最近 8 周。
@@ -58,7 +58,7 @@ src/             React 前端（pages / components / context）
 1. GitHub → Settings → Developer settings → OAuth Apps → New OAuth App。
 2. Homepage URL：`http://localhost:5173`（生产填站点域名）。
 3. Authorization callback URL：`http://localhost:5173/auth/github/callback`（生产填 `https://你的域名/auth/github/callback`）。
-4. 不需要任何 scope。
+4. OAuth App 本身不需要配置 scope；应用在授权时会请求 `read:org`。个人仓库用户不受影响，组织仓库需要该权限。
 5. 把 Client ID / Client Secret 写入 `.env` 的 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`，并把 `DEV_FAKE_GITHUB=0`。
 
 ## 本地启动

@@ -1,7 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TAGS, type Tag } from '../../shared/constants';
-import type { ProjectPatchResponse } from '../../shared/types';
+import type {
+  GithubRepoOption,
+  GithubReposResponse,
+  ProjectPatchResponse,
+} from '../../shared/types';
 import { useToast } from '../context/ToastContext';
 import { api, ApiError } from '../lib/api';
 import { formatDate } from '../lib/format';
@@ -22,6 +26,10 @@ interface CreatedResponse {
   id: number;
 }
 
+function shortDescription(description: string): string {
+  return description.length > 60 ? `${description.slice(0, 60)}…` : description;
+}
+
 export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
   const toast = useToast();
   const navigate = useNavigate();
@@ -35,6 +43,56 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [repoOptions, setRepoOptions] = useState<GithubRepoOption[] | null>(null);
+  const [repoOptionsLoading, setRepoOptionsLoading] = useState(mode === 'create');
+  const [repoOptionsError, setRepoOptionsError] = useState<string | null>(null);
+  const [repoReload, setRepoReload] = useState(0);
+
+  useEffect(() => {
+    if (mode !== 'create') {
+      setRepoOptionsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setRepoOptionsLoading(true);
+    setRepoOptionsError(null);
+    api<GithubReposResponse>('/api/github/repos')
+      .then((data) => {
+        if (cancelled) return;
+        setRepoOptions(data.repos);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setRepoOptions([]);
+        setRepoOptionsError(
+          err instanceof ApiError ? err.message : '读取 GitHub 仓库失败，请手动输入',
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setRepoOptionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, repoReload]);
+
+  const chooseRepo = (fullName: string) => {
+    if (!fullName) return;
+    setRepo(fullName);
+    if (!title.trim()) {
+      const name = fullName.split('/')[1];
+      if (name) setTitle(name);
+    }
+  };
+
+  const repoGroups = new Map<string, GithubRepoOption[]>();
+  for (const option of repoOptions ?? []) {
+    const list = repoGroups.get(option.ownerLogin) ?? [];
+    list.push(option);
+    repoGroups.set(option.ownerLogin, list);
+  }
 
   const toggleTag = (tag: Tag) => {
     setTags((prev) => {
@@ -91,6 +149,59 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
         </p>
       ) : null}
 
+      {mode === 'create' ? (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="repo-option" className="text-sm text-slate-300">
+            从我的仓库选择
+          </label>
+          <select
+            id="repo-option"
+            value=""
+            onChange={(event) => chooseRepo(event.target.value)}
+            disabled={repoOptionsLoading}
+            className={fieldClass}
+          >
+            <option value="">
+              {repoOptionsLoading ? '正在读取你的 GitHub 仓库…' : '手动输入 / 选择仓库'}
+            </option>
+            {[...repoGroups.entries()].map(([owner, options]) => (
+              <optgroup
+                key={owner}
+                label={`${owner}${options[0]?.ownerType === 'Organization' ? '（组织）' : ''}`}
+              >
+                {options.map((option) => (
+                  <option key={option.fullName} value={option.fullName}>
+                    {option.name}
+                    {option.archived ? '（已归档）' : ''}
+                    {option.description ? ` — ${shortDescription(option.description)}` : ''}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          {repoOptionsError ? (
+            <span className="text-xs text-rose-300">
+              无法读取仓库列表：{repoOptionsError}{' '}
+              <button
+                type="button"
+                onClick={() => setRepoReload((value) => value + 1)}
+                className="underline"
+              >
+                重试
+              </button>
+            </span>
+          ) : null}
+          {!repoOptionsLoading && !repoOptionsError && repoOptions?.length === 0 ? (
+            <span className="text-xs text-slate-500">
+              没有可提交的公开仓库（需本人或组织管理员，且非 fork）。
+            </span>
+          ) : null}
+          {repoOptions?.some((option) => option.ownerType === 'Organization') ? (
+            <span className="text-xs text-slate-500">组织仓库来自你担任管理员的组织。</span>
+          ) : null}
+        </div>
+      ) : null}
+
       <label className="flex flex-col gap-1.5">
         <span className="text-sm text-slate-300">GitHub 仓库</span>
         {mode === 'edit' ? (
@@ -110,7 +221,9 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
           />
         )}
         <span className="text-xs text-slate-500">
-          {mode === 'edit' ? '仓库不可修改。' : '必须是公开仓库，且属于你自己的 GitHub 账号。'}
+          {mode === 'edit'
+            ? '仓库不可修改。'
+            : '公开、非 fork；可以是自己的仓库，或你担任管理员的组织仓库。'}
         </span>
       </label>
 

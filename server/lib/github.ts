@@ -1,3 +1,4 @@
+import type { GithubRepoOption } from '../../shared/types';
 import { env } from '../env';
 
 const USER_AGENT = 'starstack/1.0';
@@ -43,7 +44,7 @@ export interface RepoMeta {
 interface RawRepo {
   full_name?: string;
   name?: string;
-  owner?: { login?: string };
+  owner?: { login?: string; type?: string };
   description?: string | null;
   stargazers_count?: number;
   forks_count?: number;
@@ -110,6 +111,35 @@ function fakeRepoMeta(owner: string, name: string): RepoMeta {
     fork: false,
     private: false,
   };
+}
+
+function fakeRepoOptions(login: string): GithubRepoOption[] {
+  return [
+    {
+      fullName: `${login}/demo-repo`,
+      name: 'demo-repo',
+      ownerLogin: login,
+      ownerType: 'User',
+      description: '本地验证用的个人仓库',
+      language: 'TypeScript',
+      stars: 12,
+      fork: false,
+      archived: false,
+      private: false,
+    },
+    {
+      fullName: `acme/${login}-org-repo`,
+      name: `${login}-org-repo`,
+      ownerLogin: 'acme',
+      ownerType: 'Organization',
+      description: '本地验证用的组织仓库',
+      language: 'Go',
+      stars: 34,
+      fork: false,
+      archived: false,
+      private: false,
+    },
+  ];
 }
 
 function fakeReadme(): string {
@@ -258,6 +288,93 @@ export async function fetchRepo(
     fork: data.fork === true,
     private: data.private === true,
   };
+}
+
+export async function isOrgAdmin(token: string, org: string): Promise<boolean> {
+  if (env.devFakeGithub) return true;
+
+  const response = await ghFetch(
+    `/user/memberships/orgs/${encodeURIComponent(org)}`,
+    { token },
+  );
+  // 404 = 不是成员；403 = token 缺少 read:org（让用户重新登录即可）
+  if (response.status === 404 || response.status === 403) return false;
+  if (response.status === 401) {
+    throw new GitHubError(401, 'GitHub 授权已失效，请重新登录');
+  }
+  if (!response.ok) {
+    throw new GitHubError(response.status, `GitHub 组织信息读取失败（${response.status}）`);
+  }
+
+  const data = (await response.json()) as { state?: string; role?: string };
+  return data.state === 'active' && data.role === 'admin';
+}
+
+/**
+ * 用户可提交的仓库：自己名下的公开仓库，或自己是 admin 的组织公开仓库。
+ * 只返回非 fork；已提交过的仓库由路由层过滤。
+ */
+export async function fetchEligibleRepos(
+  token: string,
+  login: string,
+): Promise<GithubRepoOption[]> {
+  if (env.devFakeGithub) return fakeRepoOptions(login);
+
+  const response = await ghFetch(
+    '/user/repos?per_page=100&sort=updated&visibility=public&affiliation=owner%2Corganization_member',
+    { token },
+  );
+  if (response.status === 401) {
+    throw new GitHubError(401, 'GitHub 授权已失效，请重新登录');
+  }
+  if (!response.ok) {
+    throw new GitHubError(response.status, `GitHub 仓库列表读取失败（${response.status}）`);
+  }
+
+  const repos = (await response.json()) as RawRepo[];
+  const orgs = new Set<string>();
+  for (const repo of repos) {
+    if (repo.owner?.type === 'Organization' && repo.owner.login) orgs.add(repo.owner.login);
+  }
+
+  const adminOrgs = new Set<string>();
+  await Promise.all(
+    [...orgs].map(async (org) => {
+      if (await isOrgAdmin(token, org)) adminOrgs.add(org);
+    }),
+  );
+
+  const seen = new Set<string>();
+  const result: GithubRepoOption[] = [];
+  for (const repo of repos) {
+    if (!repo.full_name || !repo.name || !repo.owner?.login) continue;
+    if (repo.private === true || repo.fork === true) continue;
+
+    const ownerType: GithubRepoOption['ownerType'] =
+      repo.owner.type === 'Organization' ? 'Organization' : 'User';
+    if (ownerType === 'Organization') {
+      if (!adminOrgs.has(repo.owner.login)) continue;
+    } else if (repo.owner.login.toLowerCase() !== login.toLowerCase()) {
+      continue;
+    }
+
+    const key = repo.full_name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({
+      fullName: repo.full_name,
+      name: repo.name,
+      ownerLogin: repo.owner.login,
+      ownerType,
+      description: repo.description ?? null,
+      language: repo.language ?? null,
+      stars: repo.stargazers_count ?? 0,
+      fork: false,
+      archived: repo.archived === true,
+      private: false,
+    });
+  }
+  return result;
 }
 
 export async function fetchReadme(owner: string, name: string): Promise<string | null> {

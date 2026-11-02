@@ -11,6 +11,7 @@ import { projectRoutes } from './routes/projects';
 import { starRoutes } from './routes/stars';
 import { leaderboardRoutes } from './routes/leaderboard';
 import { meRoutes } from './routes/me';
+import { githubRoutes } from './routes/github';
 import { adminRoutes } from './routes/admin';
 
 export const app = new Hono();
@@ -57,6 +58,7 @@ app.route('/api/projects', projectRoutes);
 app.route('/api/projects', starRoutes);
 app.route('/api/leaderboard', leaderboardRoutes);
 app.route('/api/me', meRoutes);
+app.route('/api/github', githubRoutes);
 app.route('/api/admin', adminRoutes);
 
 app.all('/api/*', (c) => c.json({ error: 'NOT_FOUND', message: '接口不存在' }, 404));

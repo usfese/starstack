@@ -107,3 +107,20 @@ export interface ProjectPatchResponse {
   evaluationQueued: boolean;
   nextEvaluationAt?: string;
 }
+
+export interface GithubRepoOption {
+  fullName: string;
+  name: string;
+  ownerLogin: string;
+  ownerType: 'User' | 'Organization';
+  description: string | null;
+  language: string | null;
+  stars: number;
+  fork: boolean;
+  archived: boolean;
+  private: boolean;
+}
+
+export interface GithubReposResponse {
+  repos: GithubRepoOption[];
+}

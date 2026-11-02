@@ -2,8 +2,15 @@ import { Hono } from 'hono';
 import type { ProjectDetail } from '../../shared/types';
 import { db } from '../db/index';
 import { getAiConfig } from '../lib/ai-config';
+import { decryptToken } from '../lib/crypto';
 import { evaluationCooldown, schedule } from '../lib/evaluation-queue';
-import { fetchRepo, githubErrorMessage, GitHubError, type RepoMeta } from '../lib/github';
+import {
+  fetchRepo,
+  githubErrorMessage,
+  GitHubError,
+  isOrgAdmin,
+  type RepoMeta,
+} from '../lib/github';
 import {
   mapProjectRow,
   PROJECT_LIST_COLUMNS,
@@ -198,7 +205,34 @@ projectRoutes.post('/', async (c) => {
   if (repoMeta.fork) throw validationError('不支持提交 fork 仓库');
 
   if (user.is_admin !== 1 && repoMeta.ownerLogin.toLowerCase() !== user.login.toLowerCase()) {
-    throw new ApiError(403, 'FORBIDDEN', '只能提交自己名下的仓库');
+    if (!user.access_token_enc) {
+      throw new ApiError(401, 'GITHUB_AUTH', 'GitHub 授权已失效，请重新登录');
+    }
+
+    let token: string;
+    try {
+      token = decryptToken(user.access_token_enc);
+    } catch {
+      throw new ApiError(401, 'GITHUB_AUTH', 'GitHub 授权已失效，请重新登录');
+    }
+
+    let orgAdmin = false;
+    try {
+      orgAdmin = await isOrgAdmin(token, repoMeta.ownerLogin);
+    } catch (error) {
+      if (error instanceof GitHubError && error.status === 401) {
+        throw new ApiError(401, 'GITHUB_AUTH', 'GitHub 授权已失效，请重新登录');
+      }
+      throw new ApiError(502, 'GITHUB_ERROR', githubErrorMessage(error));
+    }
+
+    if (!orgAdmin) {
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        '只能提交自己名下或你担任管理员的组织仓库（组织仓库可能需要重新登录授权 read:org）',
+      );
+    }
   }
 
   const existing = db

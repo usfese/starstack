@@ -146,7 +146,7 @@ gh secret set DEPLOY_SSH_KEY < ~/.ssh/starstack_deploy
 gh secret set DEPLOY_PORT --body "22"   # 可选，默认 22
 ```
 
-工作流里硬编码了 `/opt/starstack` 和 `/home/starstack/.bun/bin/bun`；路径不同时改 `.github/workflows/deploy.yml`。GitHub 的 `production` environment 可另行加审批人/保护规则。详细的手动部署、HTTPS、OAuth 配置见上文对应章节。
+工作流使用部署用户 `$HOME/.bun/bin/bun`（并回退到 `/usr/local/bin/bun`），不会硬编码用户名；部署用户没装 Bun 时会给出明确错误。部署用户需对 `/opt/starstack` 有写权限，并能通过 `sudo -n systemctl restart starstack` 免密重启。GitHub 的 `production` environment 可另行加审批人/保护规则。详细的手动部署、HTTPS、OAuth 配置见上文对应章节。
 
 ## 数据与备份
 

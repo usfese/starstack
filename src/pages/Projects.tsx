@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { TAGS } from '../../shared/constants';
-import type { ProjectListResponse } from '../../shared/types';
+import type { ProjectListResponse, ProjectTagsResponse } from '../../shared/types';
 import { EmptyState } from '../components/EmptyState';
 import { Pagination } from '../components/Pagination';
 import { ProjectCard } from '../components/ProjectCard';
@@ -51,6 +51,14 @@ export function Projects() {
   if (tag) query.set('tag', tag);
 
   const list = useApi<ProjectListResponse>(`/api/projects?${query.toString()}`);
+  const tagOptions = useApi<ProjectTagsResponse>('/api/projects/tags');
+
+  const tagMap = new Map<string, string>();
+  for (const item of TAGS) tagMap.set(item.value, item.label);
+  for (const item of tagOptions.data?.tags ?? []) {
+    if (!tagMap.has(item.value)) tagMap.set(item.value, item.value);
+  }
+  if (tag && !tagMap.has(tag)) tagMap.set(tag, tag);
 
   const lastPage = Math.max(1, Math.ceil((list.data?.total ?? 0) / PAGE_SIZE));
 
@@ -95,9 +103,9 @@ export function Projects() {
             className="rounded-lg border border-white/10 bg-[#111823] px-3 py-2 text-sm text-slate-200"
           >
             <option value="">全部标签</option>
-            {TAGS.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
+            {[...tagMap.entries()].map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </select>

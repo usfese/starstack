@@ -1,12 +1,22 @@
 import { z } from 'zod';
-import { TAG_VALUES, type Tag } from '../../shared/constants';
+import { normalizeTags, TAG_MAX_COUNT, TAG_MAX_LENGTH } from '../../shared/constants';
 
-const tagEnum = z.enum(TAG_VALUES as [Tag, ...Tag[]]);
+const tagSchema = z
+  .string()
+  .trim()
+  .min(1, '标签不能为空')
+  .max(TAG_MAX_LENGTH, `标签最多 ${TAG_MAX_LENGTH} 个字符`);
+
+const tagsSchema = z
+  .array(tagSchema)
+  .max(TAG_MAX_COUNT, `最多选择 ${TAG_MAX_COUNT} 个标签`)
+  .default([])
+  .transform(normalizeTags);
 
 export const projectListQuerySchema = z.object({
   sort: z.enum(['latest', 'stars_week', 'score', 'needs']).default('latest'),
   q: z.string().trim().max(100).optional(),
-  tag: tagEnum.optional(),
+  tag: z.string().trim().max(TAG_MAX_LENGTH).optional(),
   page: z.coerce.number().int().min(1).max(10_000, '页码超出范围').default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(12),
 });
@@ -16,7 +26,7 @@ export const submitProjectSchema = z.object({
   title: z.string().trim().min(2, '标题至少 2 个字').max(80, '标题最多 80 个字'),
   intro: z.string().trim().min(20, '项目介绍至少 20 个字').max(5000, '项目介绍最多 5000 字'),
   demoUrl: z.string().trim().max(500, '演示地址过长').optional(),
-  tags: z.array(tagEnum).max(3, '最多选择 3 个标签').default([]),
+  tags: tagsSchema,
 });
 
 export const editProjectSchema = z
@@ -29,7 +39,7 @@ export const editProjectSchema = z
       .max(5000, '项目介绍最多 5000 字')
       .optional(),
     demoUrl: z.string().trim().max(500, '演示地址过长').optional(),
-    tags: z.array(tagEnum).max(3, '最多选择 3 个标签').optional(),
+    tags: tagsSchema.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: '没有需要更新的字段' });
 

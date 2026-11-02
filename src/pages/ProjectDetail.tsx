@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { tagLabel } from '../../shared/constants';
 import type { ProjectDetail } from '../../shared/types';
@@ -6,6 +7,7 @@ import { Comments } from '../components/Comments';
 import { ConfirmButton } from '../components/ConfirmButton';
 import { EmptyState } from '../components/EmptyState';
 import { Markdown } from '../components/Markdown';
+import { ShareProject } from '../components/ShareProject';
 import { Spinner } from '../components/Spinner';
 import { StarButton } from '../components/StarButton';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +21,7 @@ export function ProjectDetailPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const detail = useApi<ProjectDetail>(id ? `/api/projects/${id}` : null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   if (detail.loading && !detail.data) return <Spinner />;
 
@@ -81,17 +84,26 @@ export function ProjectDetailPage() {
                 {project.repoFullName}
               </a>
             </div>
-            {canManage ? (
-              <div className="flex items-center gap-2">
-                <Link
-                  to={`/projects/${project.id}/edit`}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/10"
-                >
-                  编辑
-                </Link>
-                <ConfirmButton label="删除" confirmLabel="确认删除？" onConfirm={remove} />
-              </div>
-            ) : null}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShareOpen(true)}
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/10"
+              >
+                分享
+              </button>
+              {canManage ? (
+                <>
+                  <Link
+                    to={`/projects/${project.id}/edit`}
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200 hover:bg-white/10"
+                  >
+                    编辑
+                  </Link>
+                  <ConfirmButton label="删除" confirmLabel="确认删除？" onConfirm={remove} />
+                </>
+              ) : null}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-400">
@@ -171,6 +183,7 @@ export function ProjectDetailPage() {
       </div>
 
       <Comments projectId={project.id} />
+      <ShareProject project={project} open={shareOpen} onClose={() => setShareOpen(false)} />
     </div>
   );
 }

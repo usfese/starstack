@@ -100,6 +100,20 @@ projectRoutes.get('/', (c) => {
   return c.json({ items, total: totalRow.c, page, pageSize });
 });
 
+projectRoutes.get('/tags', (c) => {
+  const tags = db
+    .query(
+      `SELECT j.value AS value, COUNT(*) AS count
+       FROM projects p, json_each(p.tags) j
+       WHERE p.status = 'published'
+       GROUP BY j.value
+       ORDER BY count DESC, j.value ASC
+       LIMIT 50`,
+    )
+    .all() as { value: string; count: number }[];
+  return c.json({ tags });
+});
+
 projectRoutes.get('/:id{[0-9]+}', async (c) => {
   const id = Number.parseInt(c.req.param('id'), 10);
   const viewer = c.get('user');

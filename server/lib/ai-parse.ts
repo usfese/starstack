@@ -113,7 +113,7 @@ export function parseAiPayload(raw: string): EvaluationResult {
 
   const summary =
     typeof obj.summary === 'string' && obj.summary.trim()
-      ? obj.summary.trim().slice(0, 500)
+      ? obj.summary.trim().slice(0, 120)
       : 'AI 未给出结论。';
 
   const total = Math.round(

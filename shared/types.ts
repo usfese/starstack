@@ -153,3 +153,12 @@ export interface CommentsResponse {
 export interface CommentCreateResponse {
   comment: CommentDTO;
 }
+
+export interface ProjectTagCount {
+  value: string;
+  count: number;
+}
+
+export interface ProjectTagsResponse {
+  tags: ProjectTagCount[];
+}

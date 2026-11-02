@@ -10,13 +10,39 @@ export const TAGS = [
   { value: 'mobile', label: '移动端' },
   { value: 'data', label: '数据/数据库' },
   { value: 'game', label: '游戏' },
-  { value: 'other', label: '其他' },
 ] as const;
 
-export type Tag = (typeof TAGS)[number]['value'];
+export type PresetTag = (typeof TAGS)[number]['value'];
+export type Tag = string;
 
-export const TAG_VALUES = TAGS.map((t) => t.value) as Tag[];
+export const TAG_MAX_LENGTH = 24;
+export const TAG_MAX_COUNT = 3;
 
 export function tagLabel(value: string): string {
   return TAGS.find((t) => t.value === value)?.label ?? value;
+}
+
+/** 去空格、去掉开头的 #，用于用户自定义标签。 */
+export function normalizeTag(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^#+/, '')
+    .replace(/\s+/g, ' ')
+    .slice(0, TAG_MAX_LENGTH);
+}
+
+/** 去重（忽略大小写）并限制最多 3 个。 */
+export function normalizeTags(tags: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of tags) {
+    const value = normalizeTag(raw);
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(value);
+    if (result.length >= TAG_MAX_COUNT) break;
+  }
+  return result;
 }

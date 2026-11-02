@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TAGS, type Tag } from '../../shared/constants';
+import { TAGS, TAG_MAX_COUNT, TAG_MAX_LENGTH, normalizeTag } from '../../shared/constants';
 import type {
   GithubRepoOption,
   GithubReposResponse,
@@ -35,9 +35,8 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [intro, setIntro] = useState(initial?.introMd ?? '');
   const [demoUrl, setDemoUrl] = useState(initial?.demoUrl ?? '');
-  const [tags, setTags] = useState<Tag[]>(
-    (initial?.tags ?? []).filter((tag): tag is Tag => TAGS.some((item) => item.value === tag)),
-  );
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+  const [customTag, setCustomTag] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [repoOptions, setRepoOptions] = useState<GithubRepoOption[] | null>(null);
@@ -81,12 +80,27 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
     if (!title.trim()) setTitle(option.name);
   };
 
-  const toggleTag = (tag: Tag) => {
+  const toggleTag = (tag: string) => {
     setTags((prev) => {
       if (prev.includes(tag)) return prev.filter((item) => item !== tag);
-      if (prev.length >= 3) return prev;
+      if (prev.length >= TAG_MAX_COUNT) return prev;
       return [...prev, tag];
     });
+  };
+
+  const addCustomTag = () => {
+    const value = normalizeTag(customTag);
+    if (!value) return;
+    if (tags.length >= TAG_MAX_COUNT) {
+      toast.error(`最多选择 ${TAG_MAX_COUNT} 个标签`);
+      return;
+    }
+    if (tags.some((tag) => tag.toLowerCase() === value.toLowerCase())) {
+      setCustomTag('');
+      return;
+    }
+    setTags((prev) => [...prev, value]);
+    setCustomTag('');
   };
 
   const submit = async (event: FormEvent) => {
@@ -131,6 +145,9 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
 
   const fieldClass =
     'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-400/60';
+
+  const presetValues = new Set<string>(TAGS.map((tag) => tag.value));
+  const customTags = tags.filter((tag) => !presetValues.has(tag));
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
@@ -206,11 +223,11 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
       </label>
 
       <div className="flex flex-col gap-2">
-        <span className="text-sm text-slate-300">标签（最多 3 个）</span>
+        <span className="text-sm text-slate-300">标签（最多 {TAG_MAX_COUNT} 个）</span>
         <div className="flex flex-wrap gap-2">
           {TAGS.map((tag) => {
             const selected = tags.includes(tag.value);
-            const disabled = !selected && tags.length >= 3;
+            const disabled = !selected && tags.length >= TAG_MAX_COUNT;
             return (
               <button
                 key={tag.value}
@@ -229,6 +246,56 @@ export function ProjectForm({ mode, projectId, initial }: ProjectFormProps) {
             );
           })}
         </div>
+
+        <div className="flex gap-2">
+          <input
+            value={customTag}
+            onChange={(event) => setCustomTag(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                addCustomTag();
+              }
+            }}
+            maxLength={TAG_MAX_LENGTH}
+            placeholder="自定义标签，如 校园工具"
+            aria-label="自定义标签"
+            className={`${fieldClass} flex-1`}
+          />
+          <button
+            type="button"
+            onClick={addCustomTag}
+            disabled={tags.length >= TAG_MAX_COUNT || !customTag.trim()}
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            添加
+          </button>
+        </div>
+
+        {customTags.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {customTags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-full border border-indigo-400/40 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-100"
+              >
+                #{tag}
+                <button
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  aria-label={`移除标签 ${tag}`}
+                  className="text-indigo-200/70 hover:text-white"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <span className="text-xs text-slate-500">
+          可以自己新增标签，不需要选择“其他”。最多 {TAG_MAX_COUNT} 个，每个最多 {TAG_MAX_LENGTH} 个字符。
+        </span>
       </div>
 
       <div>

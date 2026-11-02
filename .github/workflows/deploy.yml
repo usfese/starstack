@@ -45,3 +45,6 @@ jobs:
             done
             echo "health check failed" >&2
             exit 1
+
+      - name: Public HTTPS health check
+        run: curl -fsS --retry 5 --retry-delay 2 --max-time 15 https://starstack.usfese.cc/api/health

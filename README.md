@@ -161,3 +161,10 @@ gh secret set DEPLOY_PORT --body "22"   # 可选，默认 22
 管理员：`GET /api/admin/stats`、`GET /api/admin/projects`、`POST /api/admin/projects/:id/status`、`POST /api/admin/projects/:id/reevaluate`、`GET /api/admin/users`、`POST /api/admin/users/:id/ban`、`GET /api/admin/evaluations`。
 
 错误统一为 `{ error, message, details? }`；`/api/*` 与 `/auth/logout` 的非安全方法要求 `Origin` 与 `FRONTEND_URL` 一致（CSRF）。
+
+## License
+
+GNU Affero General Public License v3.0（AGPL-3.0）。完整条款见 [LICENSE](LICENSE)。
+
+Copyright (C) 2026 usfese
+
